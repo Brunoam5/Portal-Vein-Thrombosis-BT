@@ -69,37 +69,22 @@ for i in range(N_BOOTSTRAPS):
         except Exception as e:
             print(f" Error with model {name}: {e}")
 
-# Convertir feature_counts a formato largo
 rows = []
 for model_name, counts in feature_counts.items():
     for feature, freq in counts.items():
         rows.append({"Modelo": model_name, "Variable": feature, "Frecuencia": freq})
 
 df_freq = pd.DataFrame(rows)
-
-# Asegura que todas las combinaciones Variable-Modelo estén presentes (incluso si frecuencia = 0)
 df_freq = df_freq.pivot_table(index="Variable", columns="Modelo", values="Frecuencia", fill_value=0).reset_index()
+binary_frequency = df_freq.drop(columns="Variable") > 0  
+num_models_by_variable = binary_frequency.sum(axis=1)
+df_freq_filtered = df_freq[num_models_by_variable >= 2]
 
-# Filtrar solo variables presentes en al menos 2 modelos
-frecuencia_binaria = df_freq.drop(columns="Variable") > 0  # True donde la feature aparece
-num_modelos_por_variable = frecuencia_binaria.sum(axis=1)
+selected_by_2_models = df_freq_filtered.drop(columns="Variable") > 2
+at_least_one_model_with_high_freq = selected_by_2_models.any(axis=1)
+df_freq_filtered = df_freq_filtered[at_least_one_model_with_high_freq]
 
-# Nos quedamos solo con las variables que aparecen en al menos 2 modelos
-df_freq_filtrado = df_freq[num_modelos_por_variable >= 2]
-
-# Primer filtro: variables presentes en al menos 2 modelos
-frecuencia_binaria = df_freq.drop(columns="Variable") > 0
-num_modelos_por_variable = frecuencia_binaria.sum(axis=1)
-df_freq_filtrado = df_freq[num_modelos_por_variable >= 2]
-
-# Segundo filtro: variable debe haber sido seleccionada >2 veces en al menos un modelo
-frecuencia_mayor_2 = df_freq_filtrado.drop(columns="Variable") > 2
-al_menos_un_modelo_con_freq_alta = frecuencia_mayor_2.any(axis=1)
-
-# Aplicar el segundo filtro
-df_freq_filtrado = df_freq_filtrado[al_menos_un_modelo_con_freq_alta]
-
-df_long = df_freq_filtrado.melt(id_vars="Variable", var_name="Model", value_name="Frequency")
+df_long = df_freq_filtered.melt(id_vars="Variable", var_name="Model", value_name="Frequency")
 
 for name in models:
     print(f"\n Frecuency of appearance in top-{TOP_N} for model {name}:")
@@ -115,7 +100,7 @@ for name, model in models.items():
         stable_feats = [f for f, _ in most_common[:5]]  
         
     if not stable_feats:
-        print(f"\n❌ {name} does not have sufficient stable features.")
+        print(f"\n {name} does not have sufficient stable features.")
         continue
 
     print(f"\n {name} - {len(stable_feats)} stable features")
@@ -152,9 +137,8 @@ def evaluate_with_stable_common_features(feature_counts_by_model,
                                          X_trainval, X_test, y_trainval, y_test, 
                                          models_dict, 
                                          min_freq=5, min_models=2, top_k_fallback=5):
-    print(f"\n🔎 Buscando features seleccionadas ≥{min_freq} veces en ≥{min_models} modelos...\n")
+    print(f"\n Searching for features selected ≥{min_freq} times in ≥{min_models} models...\n")
 
-    # Mapeo feature -> modelos donde fue estable
     feature_model_map = {}
     
     for model, feats in feature_counts_by_model.items():
@@ -165,18 +149,18 @@ def evaluate_with_stable_common_features(feature_counts_by_model,
     robust_features = [f for f, models in feature_model_map.items() if len(models) >= min_models]
 
     if not robust_features:
-        print("⚠️ No se encontraron features comunes suficientemente estables. Usando fallback.")
-        # Fallback: usar top-k más frecuentes en total
+        print(" No features sufficiently stable were found. Using fallback.")
+        # Fallback: use top-k more frequent in total
         global_counts = Counter()
         for model_feats in feature_counts_by_model.values():
             global_counts.update(model_feats)
         robust_features = [f for f, _ in global_counts.most_common(top_k_fallback)]
 
-    print(f"✅ {len(robust_features)} features seleccionadas:")
+    print(f"✅ {len(robust_features)} features selected:")
     for f in robust_features:
         print(f"  {f}  (modelos: {', '.join(feature_model_map.get(f, []))})")
 
-    print("\n📊 Evaluación de modelos con features comunes:")
+    print("\n Evaluation of models with common features:")
 
     for name, model in models_dict.items():
         print(f"\n🔧 Modelo: {name}")
@@ -217,7 +201,7 @@ shap_means_subset = {}
 # Visualización con features comunes seleccionados
 for name, model in models.items():
     
-    print(f"\n📈 Visualización para modelo: {name}")
+    print(f"\n Visualization for model: {name}")
     
     pipeline = Pipeline([
         ('scaler', StandardScaler()),
@@ -235,7 +219,7 @@ for name, model in models.items():
         y_proba = expit(scores)
 
     # SHAP values
-    print("🔍 Interpretabilidad SHAP...")
+    print("🔍 Interpretability SHAP...")
     try:
         if name in ["XGBoost", "RandomForest"]:
             explainer = shap.Explainer(pipeline.named_steps['model'], X_trainval[robust_features])
@@ -251,7 +235,7 @@ for name, model in models.items():
             shap_mean_abs = np.abs(shap_vals_raw).mean(axis=0)
             shap_means_subset[name] = pd.Series(shap_mean_abs, index=robust_features)
         except Exception as e:
-            print(f"⚠️ No se pudo calcular SHAP mean values para {name}: {e}")
+            print(f" Could not compute mean SHAP values for {name}: {e}")
 
         if hasattr(shap_values.values, 'ndim') and shap_values.values.ndim > 2:
             shap_values = shap.Explanation(values=shap_values.values[..., 1],
@@ -263,7 +247,7 @@ for name, model in models.items():
         shap.plots.bar(shap_values, max_display=10, show=True)
 
     except Exception as e:
-        print(f"⚠️ Error en SHAP para {name}: {e}")
+        print(f" Error in SHAP for {name}: {e}")
 
     # ROC Curve
     RocCurveDisplay.from_predictions(y_test, y_proba)
@@ -285,32 +269,18 @@ for name, model in models.items():
         plt.tight_layout()
         plt.show()
     else:
-        print(f"⚠️ Solo una clase presente en test, curva de calibración no aplicable para {name}")
+        print(f" Only one class present in test, calibration curve not applicable to {name}")
 
-    # Histograma para feature clínica si está presente (opcional)
-    if "Oclusion_RightPV" in robust_features:
-        X_test_copy = X_test.copy()
-        X_test_copy["Respuesta"] = y_test
-        plt.figure()
-        sns.histplot(data=X_test_copy, x="Oclusion_RightPV", hue="Respuesta", multiple="stack", palette="coolwarm")
-        plt.title("Distribución de Oclusión Right PV según respuesta")
-        plt.tight_layout()
-        plt.show()
-
-# Visualización agrupada de SHAP value medio
 df_shap_subset = pd.DataFrame(shap_means_subset).fillna(0)
 df_shap_subset = df_shap_subset.drop(columns=["XGBoost"], errors='ignore')
 
-# Seleccionar top-k variables más importantes
 top_k = 10
 top_vars_subset = df_shap_subset.mean(axis=1).nlargest(top_k).index
 df_topk_subset = df_shap_subset.loc[top_vars_subset]
 
-# Formato largo para seaborn
 df_long_subset = df_topk_subset.reset_index().melt(id_vars='index', var_name='Model', value_name='SHAP_mean')
 df_long_subset = df_long_subset.rename(columns={"index": "Variable"})
 
-# Plot de barras
 plt.figure(figsize=(12, 6))
 sns.barplot(data=df_long_subset, x="Variable", y="SHAP_mean", hue="Model")
 plt.xticks(rotation=45, ha='right')
