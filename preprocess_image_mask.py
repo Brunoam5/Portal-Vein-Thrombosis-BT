@@ -3,6 +3,7 @@ import numpy as np
 import nibabel as nib
 import SimpleITK as sitk
 from scipy.ndimage import label
+import matplotlib.pyplot as plt
 
 # Paths
 absolute_path = "Introduce path to Database"
@@ -130,3 +131,55 @@ for patient in os.listdir(absolute_path):
         total += 1
 
 print(f"\nAll the patients have been successfully processed. Total: {total}")
+
+# Sanity check
+
+def load_nifti(nifti_path):
+    nii = nib.load(nifti_path)
+    return nii.get_fdata()
+
+def get_thrombus_center_slice(mask):
+    coords = np.argwhere(mask > 0)
+    if coords.size == 0:
+        return None
+    z_center = int(np.mean(coords[:, 2]))
+    return z_center
+
+def plot_multiple_slices(image, mask, center_slice, patient_id, range_slices=2):
+    slices = range(center_slice - range_slices, center_slice + range_slices + 1)
+    n_slices = len(slices)
+    fig, axes = plt.subplots(1, n_slices, figsize=(4 * n_slices, 5))
+    for i, z in enumerate(slices):
+        if z < 0 or z >= image.shape[2]:
+            axes[i].axis('off')
+            continue
+        axes[i].imshow(image[:, :, z], cmap='gray')
+        axes[i].imshow(mask[:, :, z], cmap='Reds', alpha=0.5)
+        axes[i].set_title(f"Slice {z}")
+        axes[i].axis('off')
+    
+    plt.suptitle(f"Patient {patient_id} - Slices around thrombus center", fontsize=16)
+    plt.tight_layout()
+    plt.show()
+
+patient_id = "PACSX"
+image_path = os.path.join("path to CT", patient_id + ".nii")
+mask_path = os.path.join("path to Thrombus mask", patient_id + ".nii")
+
+if os.path.exists(image_path) and os.path.exists(mask_path):
+    image = load_nifti(image_path)
+    mask = load_nifti(mask_path)
+
+    if image.shape != mask.shape:
+        print(f"[ERROR] Shape mismatch for {patient_id}: image {image.shape}, mask {mask.shape}")
+    else:
+        center_slice = get_thrombus_center_slice(mask)
+        if center_slice is None:
+            print(f"[WARNING] Empty mask for patient {patient_id}")
+        else:
+            plot_multiple_slices(image, mask, center_slice, patient_id, range_slices=2)
+else:
+    print(f"[ERROR] Files from patient {patient_id} were not found")
+
+
+
