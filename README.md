@@ -6,7 +6,10 @@ A retrospective dataset of 46 PVT patients was collected, manually segmented, an
 Seven radiomic features were identified as stable and predictive across classifiers. The highest performance was achieved using radiomic features alone, and no negative impact was observed when integrating manual variables such as vessel occlusion. Instead, different types of features (manual and radiomic) complemented each other. The variable “Occlusion_RightPV” was consistently selected across models and reached statistical significance.
 These findings demonstrate the feasibility of combining DL-based segmentation with radiomics and machine learning (ML) for outcome prediction in PVT and highlight the value of integrating anatomical and imaging biomarkers for personalized disease management.
 
+
 ![image](https://github.com/user-attachments/assets/0e7208c1-4e20-4f02-87cc-33a83e33e283)
+
+
 Schematic representation of the proposed radiomics pipeline for portal vein thrombosis (PVT) analysis. The workflow includes segmentation of regions of interest (ROIs) such as vessels, thrombus, and liver; radiomic feature extraction from the segmented structures and classification of patients using ML models based on selected features.
 
 
