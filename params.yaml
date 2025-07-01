@@ -1,0 +1,22 @@
+imageType:
+  Original: {}
+  LoG:
+    sigma: [1.0, 3.0, 5.0]  # Extracts fine-to-coarse details for edge enhancement
+  Wavelet:
+    start_level: 0  # Retain highest frequency details
+    wavelet: 'coif1'  # Coiflet wavelet for better texture feature extraction
+
+featureClass:
+  shape:
+  firstorder:
+  glcm:
+  glrlm:
+  glszm:
+  gldm:
+  ngtdm:
+
+setting:
+  normalize: true
+  normalizeScale: 100
+  binWidth: 15
+  label: 1
