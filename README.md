@@ -10,6 +10,6 @@ These findings demonstrate the feasibility of combining DL-based segmentation wi
 ![image](https://github.com/user-attachments/assets/0e7208c1-4e20-4f02-87cc-33a83e33e283)
 
 
-Schematic representation of the proposed radiomics pipeline for portal vein thrombosis (PVT) analysis. The workflow includes segmentation of regions of interest (ROIs) such as vessels, thrombus, and liver; radiomic feature extraction from the segmented structures and classification of patients using ML models based on selected features.
+
 
 
