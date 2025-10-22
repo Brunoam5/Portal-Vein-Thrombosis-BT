@@ -50,6 +50,6 @@ def main(dicom_root_path, nifti_root_path):
             dcm2nii(root, output_path, folder_name)
 
 if __name__ == '__main__':
-    dicom_root_path = "/Users/bruno/Desktop/TFG/00_Data/02_DICOMS_dcm2niix"
-    nifti_root_path = "/Users/bruno/Desktop/TFG/00_Data/00_CT/NEW_CT_TFG_dcm2niix"
+    dicom_root_path = "Introduce path to dicom file"
+    nifti_root_path = "Introduce path to nifti file"
     main(dicom_root_path, nifti_root_path)
