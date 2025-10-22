@@ -92,7 +92,7 @@ for name in models:
     for feat, count in most_common:
         print(f"{feat}: {count}/{N_BOOTSTRAPS}")
 
-print("\n Evaluation using stable features (≥5/10 appearances in top-N):")
+print("\n Evaluation using stable features (≥4/10 appearances in top-N):")
 for name, model in models.items():
     freq = Counter(feature_counts[name])
     stable_feats = [f for f, c in freq.items() if c >= STABILITY_THRESHOLD]
